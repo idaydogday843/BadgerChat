@@ -1,114 +1,178 @@
 
-# CS571-F23 HW8: Badger News
+# CS571-F23 HW6: BadgerChat
 
-Welcome to Badger News! For this assignment, you will complete a mobile application that allows badgers to get and customize news from their university using just a few taps on their phone!
+Welcome to BadgerChat! This is your final React assignment that serves as a cumulative assessment of your knowledge and understanding of React. Understanding of React will be crucial for beginning with React Native.
 
-Following, you will answer questions related to mobile design.  **Make sure to complete both parts of this assignment.**
+For this assignment, you will complete a web application that allows badgers to chat with other badgers via different chatrooms. This assignment works with a *real* API! Please be mindful about what you post as this is a chat server shared by every student in CS571.
 
-## Badger News
+## BadgerChat
 
-The starter code provided to you was generated using [expo](https://expo.dev/) and all the necessary libraries for [react navigation](https://reactnavigation.org/) have already been added. See the `package.json` for details. **You should *not* re-run the expo init command**. Instead, in this directory, simply run...
+The starter code provided to you was generated using [vite](https://vitejs.dev/guide/). Furthermore, [bootstrap](https://www.npmjs.com/package/bootstrap), [react-bootstrap](https://www.npmjs.com/package/react-bootstrap), and [react-router](https://reactrouter.com/en/main) have already been installed. **You should *not* re-run the npm create vite command**. Instead, in this directory, simply run...
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
-To test your app, you have a few options. If you have a smart device, I would recommend using the expo app for [iOS](https://apps.apple.com/us/app/expo-go/id982107779) or [Android](https://play.google.com/store/apps/details?id=host.exp.exponent&hl=en_US&gl=US). You can scan the QR code using your phone, or you can launch commands via the terminal. Otherwise, you can use an emulator (such as [AVD](https://developer.android.com/studio/run/emulator)). Do not use the web browser to test your code; you must test on Android or iOS!
+Then, in a browser, open `localhost:5173`. You should *not* open index.html in a browser; React works differently than traditional web programming! When you save your changes, they appear in the browser automatically. I recommend using [Visual Studio Code](https://code.visualstudio.com/) to do your development work.
 
-Note that we are writing code in JavaScript for React Native; if you begin writing code in Objective-C, Swift, Java, or Kotlin you are likely doing something *very* wrong!
+The components you will be working on are located in the `components` folder.
 
-### API Notes
+All data can be retrieved via API calls to `https://cs571.org/api/f23/hw6/`. A brief overview of the API is provided below. Please refer to `API_DOCUMENTATION.md` for details.
 
-All data can be retrieved via API calls to `https://cs571.org/api/f23/hw8/`. A brief overview of the API is provided below. There is no further documentation as this API only supports `GET` requests. Please use Postman to explore the API in greater depth.
+All routes are relative to `https://cs571.org/api/f23/hw6/`
 
-`https://cs571.org/api/f23/hw8/articles` returns a short summary of each of the news articles including an `id`, `img`, `title`, `tags`, and `fullArticleId`. You may assume the `id` is unique for each article. The `fullArticleId` is also unique and can be used to fetch additional details below.
+| Method | URL | Purpose | Return Codes |
+| --- | --- | --- | --- |
+| `GET`| `/chatrooms` | Get all chatrooms. | 200, 304 |
+| `GET` | `/messages?chatroom=NAME&page=NUM`| Get latest messages for specified chatroom and page. | 200, 400, 404 |
+| `POST` | `/messages?chatroom=NAME` | Posts a message to the specified chatroom. | 200, 400, 404, 413 |
+| `DELETE` | `/messages?id=ID` | Deletes the given message. | 200, 400, 401, 404 |
+| `POST` | `/register` | Registers a user account. | 200, 400, 409, 413  |
+| `POST` | `/login` | Logs a user in. | 200, 400, 401 |
+| `POST` | `/logout` | Logs the current user out. | 200 |
+| `GET` | `/whoami` | Gets details about the currently logged in user. | 200 |
 
-`https://cs571.org/api/f23/hw8/article?id=ARTICLE_ID` returns the details for a particular article id (from the `fullArticleId` above). **This endpoint is intentionally slow.** These details include all of the properties of the short summary as well as additional `body`, `author`, `posted`, and `url` properties. In particular...
+When making API calls with a request body, don't forget to include the header `"Content-Type": "application/json"`. If the request requires credentials, the fetch should have an option of `credentials: "include"`.
 
- - `body` is a `list` of `string` where each item is a paragraph
- - `author` is a `string` of the author of the article
- - `posted` is a `string` representing the date the article was posted
- - `url` is `string` linking to the real article on [news.wisc.edu](https://news.wisc.edu/)
+### 1. Display Chatrooms
 
- The `img` may be appended to `https://raw.githubusercontent.com/CS571-F23/hw8-api-static-content/main/articles/` to get the requested image, e.g. the image `many_bucky.jpg` is hosted at `https://raw.githubusercontent.com/CS571-F23/hw8-api-static-content/main/articles/many_bucky.jpg`
+Some work has already been done for you! In `BadgerApp.jsx`, we create the *routes* for each chatroom, e.g. `chatrooms/Memorial Union Hangout`. However, you need to *display* navigation links for each route.
 
-### 1. Use React Navigation
+In the `NavDropdown` within `BadgerLayout.jsx`, create `NavDropdown.Item` [(docs)](https://react-bootstrap.netlify.app/docs/components/navs#using-dropdowns) for each chatroom underneath the "Chatrooms". You can add `as={Link}` to make the dropdown item act as a link. Refer to HW5 for an example of how this is done.
 
-Allow the user to navigate between two tabs: a tab for "News" and a tab for "Preferences". I would recommend using a BottomTabNavigator in `BadgerTabs.jsx` to navigate between screens for `BadgerNewsScreen.jsx` and `BadgerPreferencesScreen.jsx`. You may provide icons for and/or style the tabs, but it is not a requirement. **However, you must use React Navigation.**
+![](_figures/step1.png)
 
-![](_figures/Step1.png)
+### 2. Display Badger Messages
 
-### 2. Display News
+In `BadgerChatroom.jsx`, fetch the data for the first page of messages and display them as `BadgerMessage` components.
 
-Fetch the short news article summaries from `https://cs571.org/api/f23/hw8/articles` and display them to the screen as a card, including their image and title text. I'd recommend creating a component such as `BadgerNewsItemCard` to display each short summary as a card. Use the article's `id` as the unique key.
+`BadgerMessage` takes four props: `title`, `poster`, `content`, and `created`. Don't forget to specify a unique `key`! If there are no messages on this page, display text stating "There are no messages on  this page yet." It is okay for this text to appear if you are still loading messages.
 
-You may find the `BadgerCard` from lecture helpful here.
+Be sure to use [react-bootstrap](https://www.npmjs.com/package/react-bootstrap) to make your design responsive! There are no strict requirements for which breakpoints to use, but your design should display more columns on larger devices. Try resizing your window to test this.
 
-![](_figures/Step2.png)
+**Note:** This is a public forum, so you do not need to be logged in to read messages!
 
-### 3. Read News Article
+![](_figures/step2.png)
 
-When a news story is selected, the user should be able brought to another screen using *a nested Stack Navigator*. This screen should show the author, posting date, and body paragraphs fetched from `https://cs571.org/api/f23/hw8/article?id=ARTICLE_ID`. Be sure that only the "Article" header bar is shown. We will add the URL in Step 5.
+### 3. Use Pagination
 
-Additionally, the user should be displayed a message along the lines of "The content is loading!" while waiting for the body paragraphs to load. Furthermore, loading the additional content of the article must be *animated*. It may fade in, grow in size, or do some animation using `Animated` or some other third-party library. After finishing reading the article, the user should be able to to return to the list of short summaries. If they re-visit the story, the animation should occur again.
+In `BadgerChatroom.jsx`, add four `Pagination.Item` to the bottom of the screen. Adjust your code from Step 2 so that when the user is on page 1, the first page of results is shown; when the user is on page 2, the second page of results is shown, and so on. Not all pages may be populated, in this case simply display "There are no messages on  this page yet."
 
-![](_figures/Step3.png)
+The active page should appear blue. You may hardcode the four `Pagination.Item`. You do *not* need next or previous buttons.
 
-### 4. Apply Preferences
+**Note:** The BadgerChat API will save up to the latest 100 messages divided among these 4 pages; each page will contain up to 25 messages. 
 
-The user should be able to apply their news preferences via the "Preferences" tab. This tab should display switches (**on:** opt in, **off:** opt out) for each of the unique tags. You may **NOT** hardcode the list of unique tags; instead, you must iterate over all of the tags of the story summaries to create this list.
+![](_figures/step3.png)
 
-By default, the user should opt in to all content. However, the user should be able to toggle their preferences on and off. If the user has a preference toggled off, *any* news story with that tag should *not* be displayed to the user. If the user's preferences are so restrictive that there are no articles to be displayed, a message should be displayed saying so (it is also okay for this message to be displayed while the short summaries are loading).
+### 4. Allow Registration
 
-I would recommend creating and using a context to store the users preferences.
+In `BadgerRegister.jsx`, create a form using **controlled** input components that allows a user to create a username, password, and confirm their password. Upon clicking a "Register" button, a `POST` should be performed to create the user via the API.
 
-![](_figures/Step4.png)
+Both the password and confirmation password [must be masked](https://react-bootstrap.netlify.app/docs/forms/form-control#readonly-plain-text) and **NOT** shown in plaintext.
 
-### 5. Add URL
+*Before* performing the API call you should handle the following cases...
+ - If the user does not enter a username or password, display an `alert` saying "You must provide both a username and password!"
+ - If the user enters a password and password confirmation that do not match, display an `alert` saying "Your passwords do not match!" You can check this by comparing the fields *before* interacting with the API.
 
-Finally, re-visit Step 3 and add some text that says "Read full article here." linking to the URL of the article on [news.wisc.edu](https://news.wisc.edu/). You will likely complete this using some `Pressable` text that uses [Linking](https://reactnative.dev/docs/linking#example) to open the article in the users' browser.
+*After* receiving a response from the API, you should handle the following cases...
+  - If the username is already taken, display an `alert` saying "That username has already been taken!"
 
-**Note:** While we didn't cover this library in class, it's expected for you to read, use, and apply this documentation to your code. You may assume that the URL is properly formatted and supported by the users' browser.
+If the registration was successful, `alert` the user that the registration was successful.
 
-![](_figures/Step5.png)
+You do not need to handle any other user input failures. We will expand on the requirements of this step in Step 6.
 
-### Other Notes
+Don't forget the fetch option to include credentials!
 
-You may *not* hardcode the number of articles *or* the names of preferences *anywhere*! Being a busy publishing firm in Madison, these may vary from day-to-day, and we should *not* assume that they remain the same.
+![](_figures/step4.png)
 
-### Submission Details
-In addition to your code, **you will also need to submit a video recording of your app**. Like the demo video, it should cover all the tasks below. Please thoroughly demonstrate all tasks to showcase the capabilities of your app.
+### 5. Allow Login
 
-**Please embed your recording as a *Kaltura video* as a part of the assignment submission.**
+In `BadgerLogin.jsx`, create a form using **uncontrolled** input components that allows a user to enter their username and password. Upon clicking a "Login" button, a `POST` should be performed to authenticate the user via the API.
 
-#### Tasks 
- - Show the short summaries of all news stories.
- - Read 2 specific news stories and navigate back to the main news screen.
-   - Open the full article for 1 of the news stories.
- - Update the preferences to exclude 2 preferences and show that the news items have changed accordingly.
- - Update the preferences to exclude all preferences to show the warning message.
+The password [must be masked](https://react-bootstrap.netlify.app/docs/forms/form-control#readonly-plain-text) and **NOT** shown in plaintext.
 
-**Don't forget to complete the "Mobile Design Questions" below!**
+*Before* performing the API call you should handle the following cases...
+ - If the user does not enter a username or password, display an `alert` saying "You must provide both a username and password!"
 
-___
+*After* receiving a response from the API, you should handle the following cases...
+  - If the username or password is incorrect, display an `alert` saying "Incorrect username or password!"
 
-## Mobile Design Questions
+If the login was successful, `alert` the user that the login was successful.
 
-The questions below will ask you about the mobile design and design patterns used in the Badger News app that you had just implemented. For each question, please write a response grounded in content the "Mobile Design" lecture or other reputable sources. I would expect 2-4 sentences per response.
+You do not need to handle any other user input failures. We will expand on the requirements of this step in Step 6.
 
-1. What mobile design pattern(s) do you use in your current implementation of Badger News?
+Don't forget the fetch option to include credentials!
 
-I implemented stack for the news content panes. I implemented cards for each news piece. I also implemented tab bar on the bottom of the screen for navigation.
+![](_figures/step5.png)
 
-2. Do you believe that Badger News (this homework) or Badger Bakery (last homework) was more mobile-friendly? Support your answer.
+### 6. Managing Logged In State
 
-I think Badger News is more mobile-friendly. For the reason that Badger News utilized more mobile design options and features compared to Badger Bakery.
+Upon receiving a successful `200` response for register or login (and alerting the user), the user should be automatically navigated back to the home page using react-router's `useNavigate` hook. Furthermore, they should *no longer* see "Login" and "Register" Nav links -- they should only see a "Logout" Nav link. Similarly, when a user is logged out they should only see "Login" and "Register" Nav links; not "Logout".
 
-3. What other gesture(s) could be added to Badger News? What additional functionality would these gesture(s) support?
+Refreshing the page should **not** affect the user's logged-in state. **Only** (1) *closing* the browser or (2) the 1-hour session expiring, should result in a user having to log in again. You do not have to handle this second case.
 
-Pinch and spread could be added to Badger News. These two gestures could support the functionality of shrinking and expanding the size of the news letters.
+To achieve this, you will likely use some combination of context and `sessionStorage`. I have created a context for you in `BadgerLayout.jsx` that provides all children, grandchildren, etc. with the tuple `[loginStatus, setLoginStatus]`, e.g.
 
-4. Is there opportunity to add any microinteraction(s)? If so, what would be the trigger-action pair(s)?
+```js
+const [loginStatus, setLoginStatus] = useContext(BadgerLoginStatusContext);
+```
 
-Yes we can add microinteraction into Badger News. Specifically, we can add a refresh microinteraction that involves trigger-action pair of pull-to-refresh.
+You may use `loginStatus` to track whether the user is logged in, their username, or whatever other data you find relevant. **Be sure to persist all changes to `sessionStorage`**
+
+Again, you do *not* need to account for the user's 1-hour `badgerchat_auth` expiring when determing whether or not a user is logged in. Assume the user will close their browser or logout within their hour session.
+
+Remember that you do *not* have access to the `badgerchat_auth` cookie as it is HTTPOnly -- you will need to use context and `sessionStorage` to solve this problem.
+
+![](_figures/step6.png)
+
+### 7. Logout
+
+When the user navigates to the logout page, defined by `BadgerLogout.jsx`, they should be logged out of the application. Once again, some of the work has been done for you, but you will need to specify your `X-CS571-ID`. Based on your implementation of Step 6, you will also need to change your context and/or `sessionStorage`.
+
+![](_figures/step7.png)
+
+### 8. Create Posts
+
+In `BadgerChatroom.jsx`, allow an authenticated user to create posts. If the user is not yet authenticated, display a message that says "You must be logged in to post!" Otherwise, the user should be able to make a post through a form with a post title, post content, and a create post button. You may choose whether you want to use **controlled** or **uncontrolled** input components.
+
+*Before* performing the API call you should handle the following cases...
+ - If the user does not enter a title or content, display an `alert` saying "You must provide both a title and content!"
+
+*After* performing the API call you should `alert` the user that they have "Successfully posted!" and you should reload the latest messages.
+
+You do not need to handle any other user input failures.
+
+Don't forget the fetch option to include credentials!
+
+![](_figures/step8.png)
+
+### Step 9: Delete Posts
+
+Add the option for a user to delete *their own* posts. A red "Delete" button should be shown for each post that a user owns (but not for others' posts).
+
+*After* performing the API call you should `alert` the user that they have "Successfully deleted the post!" and you should reload the latest messages.
+
+This likely will require the child component `BadgerMessage.jsx` to talk back to its parent component `BadgerChatroom.jsx`; I would recommend passing a callback from parent to child component.
+
+![](_figures/step9.png)
+
+### Step 10: Providing for Accessibility
+
+Go back and be sure that each `input` has an `id` associated with the `htmlFor` of a `label`. If you are using [react-bootstrap](https://www.npmjs.com/package/react-bootstrap) components, be sure each `Form.Control` has an `id` associated with the `htmlFor` of a `Form.Label`. [Read more here.](https://react.dev/reference/react-dom/components/input#providing-a-label-for-an-input)
+
+Then, answer the following questions by editing this `README.md`. Images can be included using the following markdown format: `![description of image](_figures/example.png)`
+
+1. Evaluate your application based on the principles of universal design. Comment on (a) 2 principles that you have followed, and (b) 2 principles that you may have violated.
+
+Principles I have followed: 1.Tolerance for Error 2.Size and Space for Approach and Use
+
+Principles I might have violated: 1.Perceptible Information 2.Flexibility in Use
+
+2. Please sketch how you want to improve the interface based on the universal design principles. You do **not** need to implement these changes as code. Instead, include your sketch as an attachment in the `_figures` folder, and insert it below.
+
+![sketch for improving the interface](_figures/hw6-sketch.png)
+
+### Done! 🥳
+
+Congrats! Add, commit, and push your files to GitHub Classroom and paste your commit hash in the Canvas assignment.
